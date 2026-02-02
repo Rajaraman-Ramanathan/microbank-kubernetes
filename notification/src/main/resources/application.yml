@@ -1,0 +1,36 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: notification-service
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+
+  mail:
+    host: maildev
+    port: 1025
+    username: maildev
+    password: maildev
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+
+sender-email: "no-reply@microbank.co"
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true

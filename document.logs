@@ -1,0 +1,2 @@
+"issuer url mismatch:
+Springboot service issuer-uri points to keycloak:8080 but the keycloak issuer uri which is keycloak IP:PORT is 9098. i.e. container port is 8080 and host port is 9098."

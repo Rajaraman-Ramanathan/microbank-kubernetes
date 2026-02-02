@@ -1,0 +1,56 @@
+server:
+  port: 8123
+
+spring:
+  application:
+    name: api-gateway
+
+  main:
+    web-application-type: reactive
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+          lower-case-service-id: true
+
+      routes:
+        - id: transaction-service
+          uri: lb://transaction-service
+          predicates:
+             - Path=/api/v1/transactions/**
+
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/**
+
+        - id: account-service
+          uri: lb://account-service
+          predicates:
+            - Path=/api/v1/accounts/**
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/microbank
+          jwk-set-uri: http://keycloak:8080/realms/microbank/protocol/openid-connect/certs
+
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: DEBUG
+    reactor.netty.http.client: DEBUG
+    org.springframework.web.server.adapter.HttpWebHandlerAdapter: DEBUG
+    org.apache.coyote.http11: DEBUG
+

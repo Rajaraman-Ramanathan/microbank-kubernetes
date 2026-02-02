@@ -1,0 +1,269 @@
+networks:
+  microbank-network:
+    driver: bridge
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.1
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_IMPORT: /opt/keycloak/data/import/realm-export.json
+      # KC_PROXY: edge # Not to use in production, only for development purposes
+      KC_HTTP_ENABLED: "true" # Enable HTTP for development; use HTTPS in production
+    volumes:
+      - ./keycloak-config:/opt/keycloak/data/import
+    ports:
+      - "9098:8080"
+    command: [ "start-dev", "--import-realm", "--hostname=keycloak", "--hostname-port=8080", "--hostname-strict=false", "--hostname-strict-https=false" ] # Last two flags should use only in development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/realms/microbank || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - microbank-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-container
+    ports:
+      - "15672:15672" # Management UI
+      - "5672:5672"   # AMQP Port
+    networks:
+      - microbank-network 
+
+  maildev:
+    image: maildev/maildev
+    container_name: maildev-container
+    ports:
+      - "1025:1025" # SMTP Port
+      - "1080:1080" # Web UI Port
+    networks:
+      - microbank-network
+
+  redis:
+    image: redis:7
+    container_name: redis-container
+    ports:
+      - "6379:6379"
+    networks:
+      - microbank-network
+
+  postgres-auth-service:
+    image: postgres:17-alpine
+    container_name: auth-db-container
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_db
+      POSTGRES_PASSWORD: auth_db
+    ports:
+      - "5431:5432"
+    networks:
+      - microbank-network
+
+  postgres-account-service:
+    image: postgres:17-alpine
+    container_name: account-db-container
+    environment:
+      POSTGRES_DB: account_db
+      POSTGRES_USER: account_db
+      POSTGRES_PASSWORD: account_db
+    ports:
+      - "5430:5432"
+    networks:
+      - microbank-network
+
+  postgres-transaction-service:
+    image: postgres:17-alpine
+    container_name: transaction-db-container
+    environment:
+      POSTGRES_DB: transaction_db
+      POSTGRES_USER: transaction_db
+      POSTGRES_PASSWORD: transaction_db
+    ports:
+      - "5433:5432"
+    networks:
+      - microbank-network
+
+  postgres-document-service:
+    image: postgres:17-alpine
+    container_name: document-db-container
+    environment:
+      POSTGRES_DB: document_db
+      POSTGRES_USER: document_db
+      POSTGRES_PASSWORD: document_db
+    ports:
+      - "5434:5432"
+    networks:
+      - microbank-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: "capellax"
+      MINIO_ROOT_PASSWORD: "12345678"
+    ports:
+      - "9000:9000" # Minio API
+      - "9001:9001" # Minio Console
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - microbank-network
+
+  discovery-service:
+    build:
+      context: ./discovery
+      dockerfile: Dockerfile
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+    depends_on:
+      - keycloak
+      - rabbitmq
+      - maildev
+      - redis
+      - postgres-auth-service
+      - postgres-account-service
+      - postgres-transaction-service
+      - postgres-document-service
+      - minio
+    networks:
+      - microbank-network
+
+  api-gateway:
+    build:
+      context: ./apigateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8123:8123"        # Expose API Gateway externally
+    depends_on:
+      - keycloak
+      - discovery-service
+    environment:
+      # Update these if your API Gateway needs to register with Eureka
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - microbank-network
+
+  account-service:
+    build:
+      context: ./account
+      dockerfile: Dockerfile
+    container_name: account-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-account-service:5432/account_db
+      SPRING_DATASOURCE_USERNAME: account_db
+      SPRING_DATASOURCE_PASSWORD: account_db
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    depends_on:
+      - discovery-service
+      - postgres-account-service
+    networks:
+      - microbank-network
+
+  transaction-service:
+    build:
+      context: ./transaction
+      dockerfile: Dockerfile
+    container_name: transaction-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-transaction-service:5432/transaction_db
+      SPRING_DATASOURCE_USERNAME: transaction_db
+      SPRING_DATASOURCE_PASSWORD: transaction_db
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    depends_on:
+      - discovery-service
+      - postgres-transaction-service
+    networks:
+      - microbank-network
+
+  auth-service:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - discovery-service
+      - postgres-auth-service
+      - redis
+      - keycloak
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth-service:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: auth_db
+      SPRING_DATASOURCE_PASSWORD: auth_db
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      
+    networks:
+      - microbank-network
+
+  document-service:
+    build:
+      context: ./document
+      dockerfile: Dockerfile
+    container_name: document-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - discovery-service
+      - postgres-document-service
+      - minio
+      - keycloak
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-document-service:5432/document_db
+      SPRING_DATASOURCE_USERNAME: document_db
+      SPRING_DATASOURCE_PASSWORD: document_db
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: capellax
+      MINIO_SECRET_KEY: 12345678
+      MINIO_BUCKET_NAME: documents
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+
+    networks:
+      - microbank-network
+
+  notification-service:
+    build:
+      context: ./notification
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - discovery-service
+      - rabbitmq
+      - maildev
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_MAIL_HOST: maildev
+      SPRING_MAIL_PORT: 1025
+      SPRING_MAIL_USERNAME: maildev
+      SPRING_MAIL_PASSWORD: maildev
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+
+    networks:
+      - microbank-network
+
+volumes:
+  minio-data:

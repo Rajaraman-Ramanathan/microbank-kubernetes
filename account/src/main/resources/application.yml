@@ -1,0 +1,41 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: account-service
+
+  datasource:
+    url: jdbc:postgresql://postgres-account-service:5432/account_db
+    username: account_db
+    password: account_db
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database: postgresql
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate.format_sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/microbank
+          jwk-set-uri: http://keycloak:8080/realms/microbank/protocol/openid-connect/certs
+
+  cloud:
+    discovery:
+      enabled: true
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
