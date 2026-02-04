@@ -19,10 +19,6 @@ spring:
     properties:
       hibernate.format_sql: true
 
-  cloud:
-    discovery:
-      enabled: true
-
   rabbitmq:
     host: rabbitmq
     port: 5672
@@ -42,13 +38,4 @@ minio:
   access-key: capellax
   secret-key: 12345678
   bucket-name: documents
-
-eureka:
-  instance:
-    prefer-ip-address: true
-  client:
-    service-url:
-      defaultZone: http://discovery-service:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
 

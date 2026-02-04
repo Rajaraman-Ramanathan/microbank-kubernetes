@@ -25,12 +25,3 @@ spring:
     suffix: .html
 
 sender-email: "no-reply@microbank.co"
-
-eureka:
-  instance:
-    prefer-ip-address: true
-  client:
-    service-url:
-      defaultZone: http://discovery-service:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true

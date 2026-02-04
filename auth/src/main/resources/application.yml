@@ -35,10 +35,6 @@ spring:
           issuer-uri: http://keycloak:8080/realms/microbank
           jwk-set-uri: http://keycloak:8080/realms/microbank/protocol/openid-connect/certs
 
-  cloud:
-    discovery:
-      enabled: true
-
 keycloak:
   login:
     token-url: "http://keycloak:8080/realms/microbank/protocol/openid-connect/token"
@@ -54,12 +50,3 @@ keycloak:
     password: "admin"
     client-id: "admin-cli"
     client-secret: "0E3qKQwVTqbepjzCiVe3VfG41AqNEtNu"
-
-eureka:
-  instance:
-    prefer-ip-address: true
-  client:
-    service-url:
-      defaultZone: http://discovery-service:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
