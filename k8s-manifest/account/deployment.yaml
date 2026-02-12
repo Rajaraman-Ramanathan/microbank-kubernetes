@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: account-service
-        image: microbank/account-service:latest
+        image: microbank/account-service:v1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8082

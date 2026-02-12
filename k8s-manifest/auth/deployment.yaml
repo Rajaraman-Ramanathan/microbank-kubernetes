@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: microbank/auth-service:latest
+        image: microbank/auth-service:v1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8081

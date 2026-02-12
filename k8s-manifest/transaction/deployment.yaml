@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: transaction-service
-        image: microbank/transaction-service:latest
+        image: microbank/transaction-service:v1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8083

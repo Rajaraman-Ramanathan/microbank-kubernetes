@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: document-service
-        image: microbank/document-service:latest
+        image: microbank/document-service:v1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8084

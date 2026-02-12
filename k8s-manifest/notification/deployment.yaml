@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: notification-service
-        image: microbank/notification-service:latest
+        image: microbank/notification-service:v1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8085

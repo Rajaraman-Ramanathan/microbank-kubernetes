@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: api-gateway
-        image: microbank/api-gateway:latest
+        image: microbank/api-gateway:v1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8123
