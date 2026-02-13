@@ -39,6 +39,6 @@ spec:
         - name: MINIO_ACCESS_KEY
           value: capellax
         - name: MINIO_SECRET_KEY
-          value: 12345678
+          value: "12345678"
         - name: MINIO_BUCKET_NAME
           value: documents
