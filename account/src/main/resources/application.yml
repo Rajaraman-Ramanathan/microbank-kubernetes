@@ -26,3 +26,7 @@ spring:
           issuer-uri: http://keycloak:8080/realms/microbank
           jwk-set-uri: http://keycloak:8080/realms/microbank/protocol/openid-connect/certs
 
+  auth:
+    service:
+      url: http://auth-service
+
