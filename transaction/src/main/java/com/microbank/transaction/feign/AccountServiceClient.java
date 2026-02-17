@@ -15,8 +15,8 @@ import java.util.UUID;
 
 @FeignClient(
         name = "account-service",
-        configuration = FeignConfig.class
-)
+        url = "${account.service.url}",
+        configuration = FeignConfig.class)
 public interface AccountServiceClient {
 
     @GetMapping

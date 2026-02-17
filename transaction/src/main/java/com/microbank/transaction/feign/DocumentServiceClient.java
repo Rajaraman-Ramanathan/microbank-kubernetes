@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @FeignClient(
     name = "document-service",
+    url = "${document.service.url}",
     configuration = {FeignConfig.class, FeignMultipartConfig.class}
 )
 public interface DocumentServiceClient {
