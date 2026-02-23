@@ -27,7 +27,7 @@ spec:
 
         # Postgres (document DB)
         - name: SPRING_DATASOURCE_URL
-          value: jdbc:postgresql://postgres-document:5432/document_db
+          value: jdbc:postgresql://postgres-document-service:5432/document_db
         - name: SPRING_DATASOURCE_USERNAME
           value: document_db
         - name: SPRING_DATASOURCE_PASSWORD

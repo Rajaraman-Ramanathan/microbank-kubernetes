@@ -27,7 +27,7 @@ spec:
 
         # Postgres (account DB)
         - name: SPRING_DATASOURCE_URL
-          value: jdbc:postgresql://postgres-account:5432/account_db
+          value: jdbc:postgresql://postgres-account-service:5432/account_db
         - name: SPRING_DATASOURCE_USERNAME
           value: account_db
         - name: SPRING_DATASOURCE_PASSWORD
