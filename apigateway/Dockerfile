@@ -25,12 +25,9 @@ RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/l
 # Copy jar from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-COPY wait-for.sh /app/wait-for.sh
-RUN chmod +x /app/wait-for.sh
-
 # Expose the API Gateway port
 EXPOSE 8123
 
 # Run the API Gateway
-ENTRYPOINT ["/app/wait-for.sh", "keycloak", "8080", "java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
