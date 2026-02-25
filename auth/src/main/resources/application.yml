@@ -32,19 +32,19 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://keycloak:8080/realms/microbank
-          jwk-set-uri: http://keycloak:8080/realms/microbank/protocol/openid-connect/certs
+          issuer-uri: http://keycloak/realms/microbank
+          jwk-set-uri: http://keycloak/realms/microbank/protocol/openid-connect/certs
 
 keycloak:
   login:
-    token-url: "http://keycloak:8080/realms/microbank/protocol/openid-connect/token"
+    token-url: "http://keycloak/realms/microbank/protocol/openid-connect/token"
     grant-type: "password"
     client-id: "microbank-client"
     client-secret: "oVncCcoVMZCFRbiGA99ygvEcsclLcxW8"
   refresh-token:
     grant-type: "refresh_token"
   config:
-    server-url: "http://keycloak:8080"
+    server-url: "http://keycloak"
     realm: "master"
     username: "admin"
     password: "admin"

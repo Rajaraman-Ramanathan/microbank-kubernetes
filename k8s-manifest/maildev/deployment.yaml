@@ -18,6 +18,7 @@ spec:
       containers:
       - name: maildev
         image: maildev/maildev
+        imagePullPolicy: Always
         ports:
         - containerPort: 1025  # SMTP
         - containerPort: 1080  # Web UI
