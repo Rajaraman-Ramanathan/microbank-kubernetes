@@ -28,6 +28,10 @@ spec:
           value: admin
         - name: KC_HTTP_ENABLED
           value: "true"
+        - name: KC_HOSTNAME
+          value: keycloak
+        - name: KC_HOSTNAME_STRICT
+          value: "false"
         args:
         - start-dev
         - --import-realm
