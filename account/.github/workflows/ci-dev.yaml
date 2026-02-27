@@ -1,7 +1,7 @@
 name: microbank-ci-dev
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 env:
   REGISTRY: docker.io
@@ -34,7 +34,7 @@ jobs:
             file: ./account/Dockerfile
             push: true
             tags: |
-              ${{ vars.DOCKER_USERNAME }}/account-service:1.0.2
+              ${{ vars.DOCKER_USERNAME }}/account-service:1.0.${{ github.run_number }}
               ${{ vars.DOCKER_USERNAME }}/account-service:${{ github.sha }}
             cache-from: type=registry,ref=${{ vars.DOCKER_USERNAME }}/account-service:buildcache
             cache-to: type=registry,ref=${{ vars.DOCKER_USERNAME }}/account-service:buildcache,mode=max
