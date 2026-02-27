@@ -1,7 +1,9 @@
 name: microbank-ci-dev
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - dev
 
 env:
   REGISTRY: docker.io
