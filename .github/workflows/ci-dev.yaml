@@ -16,12 +16,12 @@ jobs:
         strategy:
           matrix:
             service:
-              - account-service
-              - apigateway-service
-              - auth-service
-              - document-service
-              - notification-service
-              - transaction-service
+              - account
+              - apigateway
+              - auth
+              - document
+              - notification
+              - transaction
 
         steps:
         - name: Show workflow execution context
@@ -56,8 +56,8 @@ jobs:
             context: ./${{ matrix.service }}
             push: true
             tags: |
-              ${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:1.0.${{ github.run_number }}
-              ${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:${{ github.sha }}
-            cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:buildcache
-            cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}:buildcache,mode=max
+              ${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}-service:1.0.${{ github.run_number }}
+              ${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}-service:${{ github.sha }}
+            cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}-service:buildcache
+            cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}-service:buildcache,mode=max
     
