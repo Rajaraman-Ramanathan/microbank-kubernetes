@@ -83,4 +83,30 @@ jobs:
     - name: Build summary
       run: |
         echo "Built service: ${{ matrix.service }}-service" >> $GITHUB_STEP_SUMMARY
-    
+
+  update-gitops:
+    needs: [detect-changes, build-and-push]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+    steps:
+    - name: Checkout GitOps repository
+      run: |
+        git clone https://${{ secrets.GITOPS_PAT }}@github.com/Rajaraman-Ramanathan/microbank-gitops.git
+    - name: Install yq
+      run: |
+        sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+        sudo chmod +x /usr/bin/yq
+    - name: Update image tag
+      run: |
+        VERSION=1.0.${{ github.run_number }}
+        yq -i '.spec.template.spec.containers[0].image = "${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}-service:" + strenv(VERSION)' ./microbank-gitops/k8s-manifest/dev/${{ matrix.service }}/deployment.yaml
+    - name: Commit and push changes
+      run: |
+        cd microbank-gitops
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+        git add .
+        git commit -m "Update ${{ matrix.service }} image to 1.0.${{ github.run_number }}" || echo "No change"
+        git push origin dev
