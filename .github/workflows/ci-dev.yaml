@@ -91,9 +91,13 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
     steps:
-    - name: Checkout GitOps repository
-      run: |
-        git clone https://${{ secrets.GITOPS_PAT }}@github.com/Rajaraman-Ramanathan/microbank-gitops.git
+    - name: Checkout GitOps repo
+      uses: actions/checkout@v4
+      with:
+        repository: Rajaraman-Ramanathan/microbank-gitops
+        ref: dev
+        token: ${{ secrets.GITOPS_PAT }}
+        path: microbank-gitops
     - name: Debug GitOps repo
       run: |
         ls -R microbank-gitops
