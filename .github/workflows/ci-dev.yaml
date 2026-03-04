@@ -84,9 +84,12 @@ jobs:
       run: |
         echo "Built service: ${{ matrix.service }}-service" >> $GITHUB_STEP_SUMMARY
 
-  update-gitops:
+  update-deploy-version:
     needs: [detect-changes, build-and-push]
     runs-on: ubuntu-latest
+    concurrency:
+      group: update-deploy-version-${{ github.ref }}
+      cancel-in-progress: false
     strategy:
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
@@ -109,6 +112,30 @@ jobs:
       run: |
         VERSION=1.0.${{ github.run_number }}
         yq -i '.spec.template.spec.containers[0].image = "${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}-service:" + strenv(VERSION)' ./microbank-gitops/k8s-manifest/dev/${{ matrix.service }}/deployment.yaml
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitops-${{ matrix.service }}
+        path: microbank-gitops/k8s-manifest/dev/${{ matrix.service }}/deployment.yaml
+    
+  commit-gitops-repo:
+    needs: update-deploy-version
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout GitOps repo
+      uses: actions/checkout@v4
+      with:
+        repository: Rajaraman-Ramanathan/microbank-gitops
+        ref: dev
+        token: ${{ secrets.GITOPS_PAT }}
+        path: microbank-gitops
+    - name: Download updated manifests
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    - name: Apply manifest updates
+      run: |
+        cp -r artifacts/* microbank-gitops/k8s-manifest/dev/
     - name: Commit and push changes
       run: |
         cd microbank-gitops
