@@ -1,41 +1,26 @@
-server:
-  port: 8084
-
 spring:
   application:
     name: document-service
 
-  datasource:
-    url: jdbc:postgresql://postgres-document-service:5432/document_db
-    username: document_db
-    password: document_db
-    driver-class-name: org.postgresql.Driver
-
   jpa:
-    database: postgresql
-    show-sql: true
     hibernate:
-      ddl-auto: update
-    properties:
-      hibernate.format_sql: true
-
-  rabbitmq:
-    host: rabbitmq
-    port: 5672
-    username: guest
-    password: guest
+      ddl-auto: validate
 
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://auth.microbank.local/realms/microbank
-          jwk-set-uri: http://auth.microbank.local/realms/microbank/protocol/openid-connect/certs
-          
 
-minio:
-  endpoint: http://minio:9000
-  access-key: capellax
-  secret-key: 12345678
-  bucket-name: documents
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
 

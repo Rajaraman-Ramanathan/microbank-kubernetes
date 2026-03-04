@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @FeignClient(
         name = "auth-service", 
-        url = "${auth.service.url}", 
+        url = "http://auth-service", 
         configuration = FeignConfig.class)
 public interface AuthServiceClient {
 

@@ -1,32 +1,26 @@
-server:
-  port: 8082
-
 spring:
   application:
     name: account-service
 
-  datasource:
-    url: jdbc:postgresql://postgres-account-service:5432/account_db
-    username: account_db
-    password: account_db
-    driver-class-name: org.postgresql.Driver
-
   jpa:
-    database: postgresql
-    show-sql: true
     hibernate:
-      ddl-auto: update
-    properties:
-      hibernate.format_sql: true
+      ddl-auto: validate
 
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://auth.microbank.local/realms/microbank
-          jwk-set-uri: http://auth.microbank.local/realms/microbank/protocol/openid-connect/certs
 
-auth:
-  service:
-    url: http://auth-service
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
 

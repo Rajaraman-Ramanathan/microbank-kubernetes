@@ -1,47 +1,28 @@
-server:
-  port: 8083
-
 spring:
   application:
     name: transaction-service
 
-  datasource:
-    url: jdbc:postgresql://postgres-transaction-service:5432/transaction_db
-    username: transaction_db
-    password: transaction_db
-    driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate.format_sql: true
-
-  rabbitmq:
-    host: rabbitmq
-    port: 5672
-    username: guest
-    password: guest
+      ddl-auto: validate
 
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://auth.microbank.local/realms/microbank
-          jwk-set-uri: http://auth.microbank.local/realms/microbank/protocol/openid-connect/certs
 
-account:
-  service:
-    url: http://account-service
-
-document:
-  service:
-    url: http://document-service
-
-auth:
-  service:
-    url: http://auth-service
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
 
 logging:
   level:

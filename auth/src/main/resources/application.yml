@@ -1,52 +1,33 @@
-server:
-  port: 8081
-
 spring:
   application:
     name: auth-service
 
-  datasource:
-    url: jdbc:postgresql://postgres-auth-service:5432/auth_db
-    username: auth_db
-    password: auth_db
-    driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate.format_sql: true
-    database: postgresql
+      ddl-auto: validate
 
   sql:
     init:
       mode: always
-
-  data:
-    redis:
-      host: redis
-      port: 6379
 
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://auth.microbank.local/realms/microbank
-          jwk-set-uri: http://auth.microbank.local/realms/microbank/protocol/openid-connect/certs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
 
 keycloak:
-  login:
-    token-url: "http://auth.microbank.local/realms/microbank/protocol/openid-connect/token"
-    grant-type: "password"
-    client-id: "microbank-client"
-    client-secret: "oVncCcoVMZCFRbiGA99ygvEcsclLcxW8"
   refresh-token:
     grant-type: "refresh_token"
-  config:
-    server-url: "http://auth.microbank.local"
-    realm: "master"
-    username: "admin"
-    password: "admin"
-    client-id: "admin-cli"
-    client-secret: "0E3qKQwVTqbepjzCiVe3VfG41AqNEtNu"
