@@ -87,9 +87,6 @@ jobs:
   update-deploy-version:
     needs: [detect-changes, build-and-push]
     runs-on: ubuntu-latest
-    concurrency:
-      group: update-deploy-version-${{ github.ref }}
-      cancel-in-progress: false
     strategy:
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
@@ -121,6 +118,9 @@ jobs:
   commit-gitops-repo:
     needs: update-deploy-version
     runs-on: ubuntu-latest
+    concurrency:
+      group: gitops-${{ github.ref }}
+      cancel-in-progress: false
     steps:
     - name: Checkout GitOps repo
       uses: actions/checkout@v4
@@ -135,12 +135,12 @@ jobs:
         path: artifacts
     - name: Apply manifest updates
       run: |
-        cp -r artifacts/* microbank-gitops/k8s-manifest/dev/
+        cp -r artifacts/gitops-*/* microbank-gitops/k8s-manifest/dev/
     - name: Commit and push changes
       run: |
         cd microbank-gitops
         git config user.name "github-actions"
         git config user.email "actions@github.com"
         git add .
-        git commit -m "Update ${{ matrix.service }} image to 1.0.${{ github.run_number }}" || echo "No change"
+        git commit -m "Update service image to 1.0.${{ github.run_number }}" || echo "No change"
         git push origin dev
