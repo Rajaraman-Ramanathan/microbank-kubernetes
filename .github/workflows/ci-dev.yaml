@@ -94,6 +94,9 @@ jobs:
     - name: Checkout GitOps repository
       run: |
         git clone https://${{ secrets.GITOPS_PAT }}@github.com/Rajaraman-Ramanathan/microbank-gitops.git
+    - name: Debug GitOps repo
+      run: |
+        ls -R microbank-gitops
     - name: Install yq
       run: |
         sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
