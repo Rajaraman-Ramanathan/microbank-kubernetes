@@ -10,7 +10,6 @@ COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
 # Copy source code and build the application
-# Just to run pipeline fourth
 COPY src ./src
 RUN mvn clean package -DskipTests
 
