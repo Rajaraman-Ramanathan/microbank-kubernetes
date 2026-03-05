@@ -84,39 +84,8 @@ jobs:
       run: |
         echo "Built service: ${{ matrix.service }}-service" >> $GITHUB_STEP_SUMMARY
 
-  update-deploy-version:
+  update-gitops-repo:
     needs: [detect-changes, build-and-push]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
-    steps:
-    - name: Checkout GitOps repo
-      uses: actions/checkout@v4
-      with:
-        repository: Rajaraman-Ramanathan/microbank-gitops
-        ref: dev
-        token: ${{ secrets.GITOPS_PAT }}
-        path: microbank-gitops
-    - name: Debug GitOps repo
-      run: |
-        ls -R microbank-gitops
-    - name: Install yq
-      run: |
-        sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-        sudo chmod +x /usr/bin/yq
-    - name: Update image tag
-      run: |
-        VERSION=1.0.${{ github.run_number }}
-        yq -i '.spec.template.spec.containers[0].image = "${{ env.IMAGE_NAMESPACE }}/${{ matrix.service }}-service:" + strenv(VERSION)' ./microbank-gitops/k8s-manifest/dev/${{ matrix.service }}/deployment.yaml
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: gitops-${{ matrix.service }}
-        path: microbank-gitops/k8s-manifest/dev/${{ matrix.service }}/deployment.yaml
-    
-  commit-gitops-repo:
-    needs: update-deploy-version
     runs-on: ubuntu-latest
     concurrency:
       group: gitops-${{ github.ref }}
@@ -129,18 +98,30 @@ jobs:
         ref: dev
         token: ${{ secrets.GITOPS_PAT }}
         path: microbank-gitops
-    - name: Download updated manifests
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-    - name: Apply manifest updates
+    - name: Install yq
       run: |
-        cp -r artifacts/gitops-*/* microbank-gitops/k8s-manifest/dev/
+        sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+        sudo chmod +x /usr/bin/yq
+    - name: Update image tag
+      run: |
+        VERSION=1.0.${{ github.run_number }}
+        for svc in $(echo '${{ needs.detect-changes.outputs.services }}' | jq -r '.[]'); 
+        do
+          FILE="microbank-gitops/k8s-manifest/dev/$svc/deployment.yaml"
+          if [ -f "$FILE" ]; then
+            NAME="$svc-service"
+            IMAGE="${{ env.IMAGE_NAMESPACE }}/$svc-service:$VERSION"
+            echo "Updating $NAME → $IMAGE"
+            yq -i "(.spec.template.spec.containers[] | select(.name == \"$NAME\")).image = \"$IMAGE\"" "$FILE"
+          else
+            echo "$svc deployment.yaml not found"
+          fi
+        done
     - name: Commit and push changes
       run: |
         cd microbank-gitops
         git config user.name "github-actions"
         git config user.email "actions@github.com"
-        git add .
-        git commit -m "Update service image to 1.0.${{ github.run_number }}" || echo "No change"
+        git add k8s-manifest/dev/*
+        git commit -m "Update service images to 1.0.${{ github.run_number }}" || echo "No change"
         git push origin dev
