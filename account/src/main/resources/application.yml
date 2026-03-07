@@ -3,8 +3,13 @@ spring:
     name: account-service
 
   jpa:
+    database: postgresql
+    show-sql: true
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
 
   security:
     oauth2:
