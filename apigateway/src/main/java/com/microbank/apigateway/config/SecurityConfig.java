@@ -23,6 +23,8 @@ public class SecurityConfig {
         return serverHttpSecurity
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(auth -> auth
+
+                        .pathMatchers("/actuator/health/**").permitAll()
                         .pathMatchers(HttpMethod.POST,  "/api/v1/auth/register").permitAll()
                         .pathMatchers(HttpMethod.POST,  "/api/v1/auth/activate").permitAll()
                         .pathMatchers(HttpMethod.POST,  "/api/v1/auth/login").permitAll()

@@ -24,6 +24,8 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+
+                        .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/transactions").hasRole("USER")
                         .requestMatchers(HttpMethod.GET,  "/api/v1/transactions/me/{transactionId}").hasRole("USER")
                         .requestMatchers(HttpMethod.GET,  "/api/v1/transactions/me").hasRole("USER")

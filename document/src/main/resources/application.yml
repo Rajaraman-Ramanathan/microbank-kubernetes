@@ -19,6 +19,8 @@ spring:
           jwk-set-uri: http://auth.microbank.local/realms/microbank/protocol/openid-connect/certs
 
 management:
+  server:
+    port: 8084
   endpoints:
     web:
       exposure:

@@ -8,6 +8,8 @@ spring:
       mail.smtp.starttls.enable: false
 
 management:
+  server:
+    port: 8085
   endpoints:
     web:
       base-path: /actuator
