@@ -5,9 +5,11 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - dev
+  workflow_dispatch:
+    
+ #push:
+ #  branches:
+ #     - dev 
 
 env:
   REGISTRY: docker.io
