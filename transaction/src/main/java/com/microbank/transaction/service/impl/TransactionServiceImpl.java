@@ -110,7 +110,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setDescription(request.description());
         transactionRepository.save(transaction);
 
-        TransactionEvent event = new TransactionEvent(
+        TransactionEvent transactionEvent = new TransactionEvent(
                 transaction.getId(),
                 transaction.getSenderAccountId(),
                 transaction.getReceiverAccountId(),
@@ -125,7 +125,11 @@ public class TransactionServiceImpl implements TransactionService {
                 transaction.getTimestamp()
         );
 
-            rabbitTemplate.convertAndSend("transaction-queue", event); 
+            rabbitTemplate.convertAndSend(
+            "transaction.exchange",
+            "transaction.completed",
+            transactionEvent
+); 
 
         TransactionResponse transactionResponse = transactionResponseBuilder.buildTransactionResponse(transaction);
         return new BaseApiResponse<>(
