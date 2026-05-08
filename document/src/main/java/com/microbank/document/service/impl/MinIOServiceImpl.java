@@ -4,6 +4,8 @@ import com.microbank.document.exception.CustomException;
 import com.microbank.document.service.MinIOService;
 import io.minio.*;
 import io.minio.http.Method;
+import jakarta.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -27,39 +29,78 @@ public class MinIOServiceImpl implements MinIOService {
         this.minioClient = minioClient;
     }
 
+    @PostConstruct
+    public void validateBucket() {
+        try {
+            boolean exists = minioClient.bucketExists(
+                    BucketExistsArgs.builder()
+                            .bucket(bucketName)
+                            .build()
+            );
+            if (!exists) {
+                log.error(
+                        "Required MinIO bucket does not exist | bucket={}",
+                        bucketName
+                );
+                throw new IllegalStateException(
+                        "Required MinIO bucket missing: " + bucketName
+                );
+            }
+            log.info(
+                    "MinIO bucket validation successful | bucket={}",
+                    bucketName
+            );
+        } catch (Exception ex) {
+            log.error(
+                    "Failed to validate MinIO bucket | bucket={}",
+                    bucketName,
+                    ex
+            );
+            throw new IllegalStateException(
+                    "MinIO bucket validation failed",
+                    ex
+            );
+        }
+    }
+
     @Override
     public String uploadFile(String fileName, InputStream fileStream, String contentType) {
         try {
-            boolean bucketExists = minioClient.bucketExists(
-                    BucketExistsArgs.builder().bucket(bucketName).build()
-            );
-
-            if (!bucketExists) {
-                minioClient.makeBucket(
-                        MakeBucketArgs.builder().bucket(bucketName).build()
-                );
-            }
-
-            minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(fileName)
-                            .stream(fileStream, -1, 10 * 1024 * 1024)
-                            .contentType(contentType)
-                            .build()
-            );
-
-            return minioClient.getPresignedObjectUrl(
-                    GetPresignedObjectUrlArgs.builder()
-                            .bucket(bucketName)
-                            .object(fileName)
-//                            .expiry(60 * 60 * 24) // 24 hours
-                            .method(Method.GET)
-                            .build()
-            );
-        } catch (Exception e) {
-            log.error("MinIO upload failed", e);
-            throw new CustomException("Error while uploading file to MinIO");
-        }
+        log.info(
+                "Uploading file to MinIO | bucket={} | object={}",
+                bucketName,
+                fileName
+        );
+        minioClient.putObject(
+                PutObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(fileName)
+                        .stream(fileStream, -1, 10 * 1024 * 1024)
+                        .contentType(contentType)
+                        .build()
+        );
+        log.info(
+                "MinIO upload successful | bucket={} | object={}",
+                bucketName,
+                fileName
+        );
+        return minioClient.getPresignedObjectUrl(
+                GetPresignedObjectUrlArgs.builder()
+                        .bucket(bucketName)
+                        .object(fileName)
+                        .method(Method.GET)
+                        .build()
+        );
+    } catch (Exception ex) {
+        log.error(
+                "MinIO upload failed | bucket={} | object={}",
+                bucketName,
+                fileName,
+                ex
+        );
+        throw new CustomException(
+                "MinIO upload failed for object: " + fileName
+        );
     }
+  }
 }

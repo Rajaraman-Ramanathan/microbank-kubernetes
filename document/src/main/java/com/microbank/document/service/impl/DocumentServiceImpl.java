@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
@@ -39,7 +40,15 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional
     public void createTransactionDocumentFromEvent(TransactionEvent event) {
+        if (documentRepository.findByTransactionId(event.transactionId()).isPresent()) {
+           log.warn(
+                "Transaction document already exists | txId={}",
+                event.transactionId()
+           );
+           return;
+        }
         ByteArrayInputStream pdfStream = PDFGenerator.generateTransactionDocument(event);
         String fileName = "TRANSACTION-" + event.transactionId() + ".pdf";
         String fileUrl = minIOService.uploadFile(fileName, pdfStream, "application/pdf");
