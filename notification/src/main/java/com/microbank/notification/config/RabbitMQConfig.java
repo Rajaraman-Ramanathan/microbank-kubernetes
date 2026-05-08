@@ -21,6 +21,11 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public TopicExchange notificationExchange() {
+        return new TopicExchange("notification.exchange");
+}
+
+    @Bean
     public TopicExchange deadLetterExchange() {
         return new TopicExchange("deadletter.exchange");
     }
@@ -32,14 +37,27 @@ public class RabbitMQConfig {
     @Bean
     public Queue transactionNotificationQueue() {
         return QueueBuilder.durable("transaction.notification.queue")
-                .withArgument("x-dead-letter-exchange", "deadletter.exchange")
-                .withArgument("x-dead-letter-routing-key", "transaction.notification.dead")
+                .withArgument("x-dead-letter-exchange","deadletter.exchange")
+                .withArgument("x-dead-letter-routing-key","transaction.notification.dead")
                 .build();
     }
 
     @Bean
+    public Queue activationQueue() {
+        return QueueBuilder.durable("activation.queue")
+                .withArgument("x-dead-letter-exchange","deadletter.exchange")
+                .withArgument("x-dead-letter-routing-key","activation.dead")
+                .build();
+}
+
+    @Bean
     public Queue transactionNotificationDLQ() {
         return QueueBuilder.durable("transaction.notification.dlq").build();
+    }
+
+    @Bean
+    public Queue activationDLQ() {
+        return QueueBuilder.durable("activation.dlq").build();
     }
 
     // =========================
@@ -55,11 +73,27 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Binding activationBinding() {
+        return BindingBuilder
+                .bind(activationQueue())
+                .to(notificationExchange())
+                .with("notification.activation");
+    }
+
+    @Bean
     public Binding transactionNotificationDLQBinding() {
         return BindingBuilder
                 .bind(transactionNotificationDLQ())
                 .to(deadLetterExchange())
                 .with("transaction.notification.dead");
+    }
+
+    @Bean
+    public Binding activationDLQBinding() {
+        return BindingBuilder
+                .bind(activationDLQ())
+                .to(deadLetterExchange())
+                .with("activation.dead");
     }
 
     // =========================

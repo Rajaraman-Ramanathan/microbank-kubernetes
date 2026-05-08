@@ -3,6 +3,8 @@ package com.microbank.auth.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microbank.auth.dto.event.ActivationEvent;
+import com.microbank.auth.dto.event.PasswordRecoveryEvent;
 import com.microbank.auth.dto.request.*;
 import com.microbank.auth.dto.response.UserResponse;
 import com.microbank.auth.exception.CustomException;
@@ -14,7 +16,6 @@ import com.microbank.auth.repository.UserRepository;
 import com.microbank.auth.response.BaseApiResponse;
 import com.microbank.auth.service.AuthService;
 import com.microbank.auth.service.utils.UserServiceUtils;
-import com.nimbusds.jwt.JWT;
 
 import jakarta.ws.rs.core.Response;
 import org.keycloak.admin.client.Keycloak;
@@ -37,6 +38,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -49,6 +52,8 @@ public class AuthServiceImpl implements AuthService {
     private final RabbitTemplate rabbitTemplate;
     private final RestTemplate restTemplate;
     private final UserServiceUtils userServiceUtils;
+    private static final Logger log =
+        LoggerFactory.getLogger(AuthServiceImpl.class);
 
     public AuthServiceImpl(
             UserRepository userRepository,
@@ -106,17 +111,35 @@ public class AuthServiceImpl implements AuthService {
         String activationCode = generateActivationCode();
         saveUserToRedis(request, activationCode);
 
-        Map<String, String> message = new HashMap<>();
-        message.put("email", request.email());
-        message.put("firstName", request.firstName());
-        message.put("lastName", request.lastName());
-        message.put("activationCode", activationCode);
+        ActivationEvent activationEvent =
+        new ActivationEvent(
+                request.email(),
+                request.firstName(),
+                request.lastName(),
+                activationCode
+        );
 
         try {
-            String jsonMessage = objectMapper.writeValueAsString(message);
-            rabbitTemplate.convertAndSend("activation-queue", jsonMessage);
+            log.info(
+                "Publishing activation event | email={}",
+                request.email()
+            );
+            rabbitTemplate.convertAndSend(
+                    "notification.exchange",
+                    "notification.activation",
+                    activationEvent
+            );
+            log.info(
+                "Activation event published successfully | email={}",
+                request.email()
+            );
 
         } catch (Exception e) {
+            log.error(
+                "Failed to publish activation event | email={}",
+                request.email(),
+                e
+            );
             return new BaseApiResponse<>(
                     HttpStatus.INTERNAL_SERVER_ERROR.value(),
                     "Failed to send activation email.",
@@ -336,18 +359,39 @@ public class AuthServiceImpl implements AuthService {
             );
 
         } catch (JsonProcessingException e) {
+            log.error(
+                "Failed to store password recovery data in Redis | email={}",
+                normalizedEmail,
+                e
+            );
             throw new CustomException("Error saving recovery data to Redis");
         }
 
-        Map<String, String> message = new HashMap<>();
-        message.put("email", normalizedEmail);
-        message.put("passwordRecoveryCode", passwordRecoveryCode);
-
+        PasswordRecoveryEvent passwordRecoveryEvent =
+        new PasswordRecoveryEvent(
+                normalizedEmail,
+                passwordRecoveryCode
+        );
         try {
-            String jsonMessage = objectMapper.writeValueAsString(message);
-            rabbitTemplate.convertAndSend("password-recovery-queue", jsonMessage);
-
+            log.info(
+                "Publishing password recovery event | email={}",
+                normalizedEmail
+            );
+            rabbitTemplate.convertAndSend(
+                    "notification.exchange",
+                    "notification.password.recovery",
+                    passwordRecoveryEvent
+            );
+            log.info(
+                "Password recovery event published successfully | email={}",
+                normalizedEmail
+            );
         } catch (Exception e) {
+            log.error(
+                "Failed to publish password recovery event | email={}",
+                normalizedEmail,
+                e
+            );
             return new BaseApiResponse<>(
                     HttpStatus.INTERNAL_SERVER_ERROR.value(),
                     "An error occurred while sending password recovery message.",
