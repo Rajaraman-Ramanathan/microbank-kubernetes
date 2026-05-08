@@ -34,25 +34,15 @@ public class RabbitMQConfig {
     @Bean
     public Queue transactionDocumentQueue() {
 
-        return QueueBuilder
-                .durable("transaction.document.queue")
-                .withArgument(
-                        "x-dead-letter-exchange",
-                        "deadletter.exchange"
-                )
-                .withArgument(
-                        "x-dead-letter-routing-key",
-                        "transaction.document.dead"
-                )
+        return QueueBuilder.durable("transaction.document.queue")
+                .withArgument("x-dead-letter-exchange","deadletter.exchange")
+                .withArgument("x-dead-letter-routing-key","transaction.document.dead")
                 .build();
     }
 
     @Bean
     public Queue transactionDocumentDLQ() {
-
-        return QueueBuilder
-                .durable("transaction.document.dlq")
-                .build();
+        return QueueBuilder.durable("transaction.document.dlq").build();
     }
 
     // =========================
@@ -61,7 +51,6 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding transactionDocumentBinding() {
-
         return BindingBuilder
                 .bind(transactionDocumentQueue())
                 .to(transactionExchange())

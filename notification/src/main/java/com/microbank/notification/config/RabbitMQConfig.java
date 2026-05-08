@@ -39,8 +39,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue transactionNotificationDLQ() {
-        return QueueBuilder.durable("transaction.notification.dlq")
-                .build();
+        return QueueBuilder.durable("transaction.notification.dlq").build();
     }
 
     // =========================
