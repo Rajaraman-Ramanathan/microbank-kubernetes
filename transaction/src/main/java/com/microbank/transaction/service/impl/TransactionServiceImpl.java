@@ -18,6 +18,8 @@ import com.microbank.transaction.response.BaseApiResponse;
 import com.microbank.transaction.service.TransactionService;
 import com.microbank.transaction.service.utils.TransactionResponseBuilder;
 import jakarta.transaction.Transactional;
+
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -58,86 +60,158 @@ public class TransactionServiceImpl implements TransactionService {
         this.documentServiceClient = documentServiceClient;
     }
 
-    @Override
-    @Transactional
-    public BaseApiResponse<TransactionResponse> createTransaction(CreateTransactionRequest request) {
-        request.validate();
-
-        var currentUser = authServiceClient.getCurrentUser();
-        if (currentUser == null || currentUser.getData() == null) {
-            throw new UnauthorizedException("User not authenticated.");
-        }
-
-        var senderAccountResponse = accountServiceClient.getCurrentUsersAccountById(request.senderAccountId());
-        if (senderAccountResponse == null || senderAccountResponse.getData() == null) {
-            throw new UnauthorizedException("Source account does not belong to the current user.");
-        }
-
-        AccountResponse senderAccount = accountServiceClient.getAccountById(request.senderAccountId()).getData();
-        AccountResponse receiverAccount;
-
-        if (request.receiverAccountId() != null) {
-            receiverAccount = accountServiceClient.getAccountById(request.receiverAccountId()).getData();
-        } else {
-            receiverAccount = accountServiceClient.getAccountByIban(request.receiverAccountIban()).getData();
-        }
-
-        if (senderAccount.balance().compareTo(request.amount()) < 0) {
-            throw new CustomException("Insufficient balance.");
-        }
-
-        accountServiceClient.updateAccountBalance(
-                new UpdateBalanceRequest(
-                        senderAccount.id(),
-                        request.amount(),
-                        false
-                )
+@Override
+@Transactional
+public BaseApiResponse<TransactionResponse> createTransaction(CreateTransactionRequest request) {
+    request.validate();
+    log.info(
+            "Transaction creation request received | senderAccountId={} | receiverAccountId={} | receiverIban={} | amount={}",
+            request.senderAccountId(),
+            request.receiverAccountId(),
+            request.receiverAccountIban(),
+            request.amount()
+    );
+    var currentUser = authServiceClient.getCurrentUser();
+    if (currentUser == null || currentUser.getData() == null) {
+        log.error(
+                "Transaction failed | reason=unauthenticated user"
         );
-
-        accountServiceClient.updateAccountBalance(
-                new UpdateBalanceRequest(
-                        receiverAccount.id(),
-                        request.amount(),
-                        true
-                )
-        );
-
-        Transaction transaction = new Transaction();
-        transaction.setSenderAccountId(senderAccount.id());
-        transaction.setReceiverAccountId(receiverAccount.id());
-        transaction.setAmount(request.amount());
-        transaction.setTimestamp(LocalDateTime.now());
-        transaction.setDescription(request.description());
-        transactionRepository.save(transaction);
-
-        TransactionEvent transactionEvent = new TransactionEvent(
-                transaction.getId(),
-                transaction.getSenderAccountId(),
-                transaction.getReceiverAccountId(),
-                senderAccount.ownerEmail(),
-                receiverAccount.ownerEmail(),
-                senderAccount.IBAN(),
-                receiverAccount.IBAN(),
-                senderAccount.ownerName(),
-                receiverAccount.ownerName(),
-                transaction.getAmount(),
-                transaction.getDescription(),
-                transaction.getTimestamp()
-        );
-
-            rabbitTemplate.convertAndSend(
-            "transaction.exchange",
-            "transaction.completed",
-            transactionEvent
-); 
-
-        TransactionResponse transactionResponse = transactionResponseBuilder.buildTransactionResponse(transaction);
-        return new BaseApiResponse<>(
-                HttpStatus.CREATED.value(),
-                "Transaction created successfully.",
-                transactionResponse
+        throw new UnauthorizedException(
+                "User not authenticated."
         );
     }
+    var senderAccountResponse =
+            accountServiceClient.getCurrentUsersAccountById(
+                    request.senderAccountId()
+            );
+    if (senderAccountResponse == null
+            || senderAccountResponse.getData() == null) {
+        log.error(
+                "Transaction failed | senderAccountId={} does not belong to current user",
+                request.senderAccountId()
+        );
+        throw new UnauthorizedException(
+                "Source account does not belong to the current user."
+        );
+    }
+    AccountResponse senderAccount =
+            accountServiceClient
+                    .getAccountById(request.senderAccountId())
+                    .getData();
+    AccountResponse receiverAccount;
+    if (request.receiverAccountId() != null) {
+        receiverAccount =
+                accountServiceClient
+                        .getAccountById(request.receiverAccountId()).getData();
+    } else {
+        receiverAccount =
+                accountServiceClient
+                        .getAccountByIban(request.receiverAccountIban()).getData();
+    }
+    if (senderAccount.balance()
+            .compareTo(request.amount()) < 0) {
+        log.error(
+                "Transaction failed | insufficient balance | senderAccountId={} | balance={} | requestedAmount={}",
+                senderAccount.id(),
+                senderAccount.balance(),
+                request.amount()
+        );
+        throw new CustomException(
+                "Insufficient balance."
+        );
+    }
+    log.info(
+            "Updating sender account balance | senderAccountId={} | amount={}",
+            senderAccount.id(),
+            request.amount()
+    );
+    accountServiceClient.updateAccountBalance(
+            new UpdateBalanceRequest(
+                    senderAccount.id(),
+                    request.amount(),
+                    false
+            )
+    );
+    log.info(
+            "Updating receiver account balance | receiverAccountId={} | amount={}",
+            receiverAccount.id(),
+            request.amount()
+    );
+    accountServiceClient.updateAccountBalance(
+            new UpdateBalanceRequest(
+                    receiverAccount.id(),
+                    request.amount(),
+                    true
+            )
+    );
+    Transaction transaction = new Transaction();
+    transaction.setSenderAccountId(senderAccount.id());
+    transaction.setReceiverAccountId(receiverAccount.id());
+    transaction.setAmount(request.amount());
+    transaction.setTimestamp(LocalDateTime.now());
+    transaction.setDescription(request.description());
+
+    transactionRepository.save(transaction);
+    log.info(
+            "Transaction persisted successfully | transactionId={}",
+            transaction.getId()
+    );
+    TransactionEvent transactionEvent =
+            new TransactionEvent(
+                    transaction.getId(),
+                    transaction.getSenderAccountId(),
+                    transaction.getReceiverAccountId(),
+                    senderAccount.ownerEmail(),
+                    receiverAccount.ownerEmail(),
+                    senderAccount.IBAN(),
+                    receiverAccount.IBAN(),
+                    senderAccount.ownerName(),
+                    receiverAccount.ownerName(),
+                    transaction.getAmount(),
+                    transaction.getDescription(),
+                    transaction.getTimestamp()
+            );
+    CorrelationData correlationData = new CorrelationData(transaction.getId().toString());
+    try {
+        log.info(
+                "Publishing transaction event | transactionId={} | exchange={} | routingKey={}",
+                transaction.getId(),
+                "transaction.exchange",
+                "transaction.completed"
+        );
+        rabbitTemplate.convertAndSend(
+                "transaction.exchange",
+                "transaction.completed",
+                transactionEvent,
+                correlationData
+        );
+        log.info(
+                "Transaction event published successfully | transactionId={}",
+                transaction.getId()
+        );
+    } catch (Exception ex) {
+        log.error(
+                "Transaction event publishing failed | transactionId={}",
+                transaction.getId(),
+                ex
+        );
+        throw new CustomException(
+                "Failed to publish transaction event."
+        );
+    }
+    TransactionResponse transactionResponse =
+            transactionResponseBuilder
+                    .buildTransactionResponse(transaction);
+    log.info(
+            "Transaction completed successfully | transactionId={}",
+            transaction.getId()
+    );
+    return new BaseApiResponse<>(
+            HttpStatus.CREATED.value(),
+            "Transaction created successfully.",
+            transactionResponse
+    );
+}
 
     @Override
     public BaseApiResponse<List<TransactionResponse>> getCurrentUsersAllTransactions() {

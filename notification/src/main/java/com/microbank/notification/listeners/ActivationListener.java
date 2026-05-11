@@ -12,7 +12,6 @@ public class ActivationListener {
 
     private static final Logger log =
             LoggerFactory.getLogger(ActivationListener.class);
-
     private final MailService mailService;
 
     public ActivationListener(MailService mailService) {
@@ -24,34 +23,27 @@ public class ActivationListener {
             containerFactory = "rabbitListenerContainerFactory"
     )
     public void handleActivationEvent(ActivationEvent event) {
-
         log.info(
                 "Activation event received | email={}",
                 event.email()
         );
-
         try {
-
             mailService.sendActivationMail(
                     event.email(),
                     event.firstName(),
                     event.lastName(),
                     event.activationCode()
             );
-
             log.info(
                     "Activation email sent successfully | email={}",
                     event.email()
             );
-
         } catch (Exception ex) {
-
             log.error(
                     "Failed to send activation email | email={}",
                     event.email(),
                     ex
             );
-
             throw new RuntimeException(ex);
         }
     }

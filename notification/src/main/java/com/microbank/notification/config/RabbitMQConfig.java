@@ -48,7 +48,15 @@ public class RabbitMQConfig {
                 .withArgument("x-dead-letter-exchange","deadletter.exchange")
                 .withArgument("x-dead-letter-routing-key","activation.dead")
                 .build();
-}
+    }
+
+    @Bean
+    public Queue passwordRecoveryQueue() {
+        return QueueBuilder.durable("password.recovery.queue")
+                .withArgument("x-dead-letter-exchange","deadletter.exchange")
+                .withArgument("x-dead-letter-routing-key","password.recovery.dead")
+                .build();
+    }
 
     @Bean
     public Queue transactionNotificationDLQ() {
@@ -58,6 +66,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue activationDLQ() {
         return QueueBuilder.durable("activation.dlq").build();
+    }
+
+    @Bean
+    public Queue passwordRecoveryDLQ() {
+        return QueueBuilder.durable("password.recovery.dlq").build();
     }
 
     // =========================
@@ -81,6 +94,14 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Binding passwordRecoveryBinding() {
+        return BindingBuilder
+                .bind(passwordRecoveryQueue())
+                .to(notificationExchange())
+                .with("notification.password.recovery");
+    }
+
+    @Bean
     public Binding transactionNotificationDLQBinding() {
         return BindingBuilder
                 .bind(transactionNotificationDLQ())
@@ -94,6 +115,14 @@ public class RabbitMQConfig {
                 .bind(activationDLQ())
                 .to(deadLetterExchange())
                 .with("activation.dead");
+    }
+
+    @Bean
+    public Binding passwordRecoveryDLQBinding() {
+        return BindingBuilder
+                .bind(passwordRecoveryDLQ())
+                .to(deadLetterExchange())
+                .with("password.recovery.dead");
     }
 
     // =========================

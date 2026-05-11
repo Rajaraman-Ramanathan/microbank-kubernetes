@@ -18,5 +18,5 @@ public record TransactionEvent(
         BigDecimal amount,
         String description,
         LocalDateTime timestamp
-) implements Serializable {
+) {
 }

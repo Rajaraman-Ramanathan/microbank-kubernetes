@@ -13,7 +13,6 @@ public class TransactionListener {
 
     private final MailService mailService;
     private static final Logger log = LoggerFactory.getLogger(TransactionListener.class);
-
     public TransactionListener(MailService mailService) {
         this.mailService = mailService;
     }
@@ -23,16 +22,13 @@ public class TransactionListener {
             containerFactory = "rabbitListenerContainerFactory"
     )
     public void handleTransactionEvent(TransactionEvent event) {
-
         log.info(
                 "Transaction event received | txId={} | sender={} | receiver={}",
                 event.transactionId(),
                 event.senderAccountEmail(),
                 event.receiverAccountEmail()
         );
-
         try {
-
             // Sender notification
             mailService.sendTransactionMail(
                     event.senderAccountEmail(),
@@ -45,7 +41,6 @@ public class TransactionListener {
                     event.description(),
                     event.timestamp()
             );
-
             // Receiver notification
             mailService.sendTransactionMail(
                     event.receiverAccountEmail(),
@@ -58,20 +53,16 @@ public class TransactionListener {
                     event.description(),
                     event.timestamp()
             );
-
             log.info(
                     "Transaction notification emails sent successfully | txId={}",
                     event.transactionId()
             );
-
         } catch (MessagingException ex) {
-
             log.error(
                     "Failed to send transaction email | txId={}",
                     event.transactionId(),
                     ex
             );
-
             throw new RuntimeException(ex);
         }
     }

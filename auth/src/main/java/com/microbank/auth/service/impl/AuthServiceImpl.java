@@ -23,6 +23,7 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -99,7 +100,6 @@ public class AuthServiceImpl implements AuthService {
                     null
             );
         }
-
         if (userRepository.existsByEmail(request.email())) {
             return new BaseApiResponse<>(
                     HttpStatus.CONFLICT.value(),
@@ -107,10 +107,8 @@ public class AuthServiceImpl implements AuthService {
                     null
             );
         }
-
         String activationCode = generateActivationCode();
         saveUserToRedis(request, activationCode);
-
         ActivationEvent activationEvent =
         new ActivationEvent(
                 request.email(),
@@ -118,7 +116,11 @@ public class AuthServiceImpl implements AuthService {
                 request.lastName(),
                 activationCode
         );
-
+        CorrelationData correlationData = new CorrelationData("activation-"
+                        + request.email()
+                        + "-"
+                        + UUID.randomUUID()
+        );
         try {
             log.info(
                 "Publishing activation event | email={}",
@@ -127,13 +129,13 @@ public class AuthServiceImpl implements AuthService {
             rabbitTemplate.convertAndSend(
                     "notification.exchange",
                     "notification.activation",
-                    activationEvent
+                    activationEvent,
+                    correlationData
             );
             log.info(
                 "Activation event published successfully | email={}",
                 request.email()
             );
-
         } catch (Exception e) {
             log.error(
                 "Failed to publish activation event | email={}",
@@ -146,7 +148,6 @@ public class AuthServiceImpl implements AuthService {
                     null
             );
         }
-
         return new BaseApiResponse<>(
                 HttpStatus.CREATED.value(),
                 "Registration successful, activation code sent to " + request.email(),
@@ -372,6 +373,11 @@ public class AuthServiceImpl implements AuthService {
                 normalizedEmail,
                 passwordRecoveryCode
         );
+        CorrelationData correlationData = new CorrelationData("password-recovery-"
+                        + normalizedEmail
+                        + "-"
+                        + UUID.randomUUID()
+        );
         try {
             log.info(
                 "Publishing password recovery event | email={}",
@@ -380,7 +386,8 @@ public class AuthServiceImpl implements AuthService {
             rabbitTemplate.convertAndSend(
                     "notification.exchange",
                     "notification.password.recovery",
-                    passwordRecoveryEvent
+                    passwordRecoveryEvent,
+                    correlationData
             );
             log.info(
                 "Password recovery event published successfully | email={}",

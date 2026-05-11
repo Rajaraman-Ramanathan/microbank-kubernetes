@@ -1,8 +1,13 @@
 package com.microbank.notification.listeners;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microbank.notification.event.PasswordRecoveryEvent;
 import com.microbank.notification.service.MailService;
+
+import jakarta.mail.MessagingException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
@@ -10,25 +15,45 @@ import org.springframework.stereotype.Component;
 public class PasswordRecoveryListener {
 
     private final MailService mailService;
-    private final ObjectMapper objectMapper;
+    private static final Logger log =
+            LoggerFactory.getLogger(
+                    PasswordRecoveryListener.class
+            );
 
-    public PasswordRecoveryListener(MailService mailService, ObjectMapper objectMapper) {
+    public PasswordRecoveryListener(
+            MailService mailService
+    ) {
+
         this.mailService = mailService;
-        this.objectMapper = objectMapper;
     }
 
-    @RabbitListener(queues = "password-recovery-queue")
-    public void handlePasswordRecovery(String message) {
+    @RabbitListener(
+            queues = "password.recovery.queue",
+            containerFactory = "rabbitListenerContainerFactory"
+    )
+    public void handlePasswordRecoveryEvent(
+            PasswordRecoveryEvent event
+    ) {
+        log.info(
+                "Password recovery event received | email={}",
+                event.email()
+        );
         try {
-            JsonNode jsonNode = objectMapper.readTree(message);
-            String email = jsonNode.get("email").asText();
-            String passwordRecoveryCode = jsonNode.get("passwordRecoveryCode").asText();
-
-            mailService.sendPasswordRecoveryMail(email, passwordRecoveryCode);
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error while processing password recovery message", e);
+            mailService.sendPasswordRecoveryMail(
+                    event.email(),
+                    event.passwordRecoveryCode()
+            );
+            log.info(
+                    "Password recovery email sent successfully | email={}",
+                    event.email()
+            );
+        } catch (MessagingException ex) {
+            log.error(
+                    "Failed to send password recovery email | email={}",
+                    event.email(),
+                    ex
+            );
+            throw new RuntimeException(ex);
         }
     }
-
 }
