@@ -12,9 +12,7 @@ public class RabbitMQConfig {
 
     @Bean
     public TopicExchange notificationExchange() {
-        return new TopicExchange(
-                "notification.exchange"
-        );
+        return new TopicExchange("notification.exchange");
     }
 
     @Bean
