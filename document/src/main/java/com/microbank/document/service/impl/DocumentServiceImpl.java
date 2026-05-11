@@ -111,16 +111,13 @@ public class DocumentServiceImpl implements DocumentService {
                     transactionId,
                     file.getOriginalFilename()
             );
-
             String objectName =
                     transactionId + "/" + file.getOriginalFilename();
-
             minIOService.uploadFile(
                     objectName,
                     file.getInputStream(),
                     file.getContentType()
             );
-
             log.info("MinIO upload successful | txId={}", transactionId);
 
         } catch (Exception e) {

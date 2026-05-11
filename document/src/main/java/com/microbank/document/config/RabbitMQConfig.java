@@ -33,7 +33,6 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue transactionDocumentQueue() {
-
         return QueueBuilder.durable("transaction.document.queue")
                 .withArgument("x-dead-letter-exchange","deadletter.exchange")
                 .withArgument("x-dead-letter-routing-key","transaction.document.dead")
@@ -59,7 +58,6 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding transactionDocumentDLQBinding() {
-
         return BindingBuilder
                 .bind(transactionDocumentDLQ())
                 .to(deadLetterExchange())

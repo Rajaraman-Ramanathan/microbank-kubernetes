@@ -26,29 +26,22 @@ public class DocumentListener {
             containerFactory = "rabbitListenerContainerFactory"
     )
     public void handleTransactionEvent(TransactionEvent event) {
-
         log.info(
                 "Transaction event received for document generation | txId={}",
                 event.transactionId()
         );
-
         try {
-
             documentService.createTransactionDocumentFromEvent(event);
-
             log.info(
                     "Transaction document generated successfully | txId={}",
                     event.transactionId()
             );
-
         } catch (Exception ex) {
-
             log.error(
                     "Failed to generate transaction document | txId={}",
                     event.transactionId(),
                     ex
             );
-
             throw new RuntimeException(ex);
         }
     }
