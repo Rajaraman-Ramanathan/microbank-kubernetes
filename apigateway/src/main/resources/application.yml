@@ -27,8 +27,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://auth.microbank.local/realms/microbank
-          jwk-set-uri: http://auth.microbank.local/realms/microbank/protocol/openid-connect/certs
+          issuer-uri: http://auth.dev.microbankapp.com/realms/microbank
+          jwk-set-uri: http://auth.dev.microbankapp.com/realms/microbank/protocol/openid-connect/certs
 
 management:
   server:
