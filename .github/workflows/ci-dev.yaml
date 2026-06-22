@@ -106,14 +106,14 @@ jobs:
         VERSION=1.0.${{ github.run_number }}
         for svc in $(echo '${{ needs.detect-changes.outputs.services }}' | jq -r '.[]'); 
         do
-          FILE="microbank-gitops/workloads/$svc/deployment.yaml"
+          FILE="microbank-gitops/environments/dev/$svc/values-dev.yaml"
           if [ -f "$FILE" ]; then
-            NAME="$svc-service"
-            IMAGE="${{ env.IMAGE_NAMESPACE }}/$svc-service:$VERSION"
-            echo "Updating $NAME → $IMAGE"
-            yq -i "(.spec.template.spec.containers[] | select(.name == \"$NAME\")).image = \"$IMAGE\"" "$FILE"
+            REPOSITORY="${{ env.IMAGE_NAMESPACE }}/$svc-service"
+            TAG="$VERSION"
+            echo "Updating $REPOSITORY:$TAG"
+            yq -i "(.image.repository = \"$REPOSITORY\") | (.image.tag = \"$TAG\")" "$FILE"
           else
-            echo "$svc deployment.yaml not found"
+            echo "$svc values-dev.yaml not found"
           fi
         done
     - name: Commit and push changes
@@ -121,6 +121,6 @@ jobs:
         cd microbank-gitops
         git config user.name "github-actions"
         git config user.email "actions@github.com"
-        git add workloads/*
+        git add environments/*
         git commit -m "Update service images to 1.0.${{ github.run_number }}" || echo "No change"
         git push origin dev
