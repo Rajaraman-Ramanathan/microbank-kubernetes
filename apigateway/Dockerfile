@@ -10,7 +10,7 @@ COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
 # Copy source and build jar
-# Just for CI two
+# Just for CI three
 COPY src ./src
 RUN mvn clean package -DskipTests
 
