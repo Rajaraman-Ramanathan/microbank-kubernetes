@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @FeignClient(
     name = "document-service",
-    url = "http://document-service",
+    url = "http://document-service.microbank-document.svc.cluster.local",
     configuration = {FeignConfig.class, FeignMultipartConfig.class}
 )
 public interface DocumentServiceClient {

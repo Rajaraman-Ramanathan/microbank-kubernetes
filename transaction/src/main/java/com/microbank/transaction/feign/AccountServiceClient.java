@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @FeignClient(
         name = "account-service",
-        url = "http://account-service",
+        url = "http://account-service.microbank-account.svc.cluster.local",
         configuration = FeignConfig.class)
 public interface AccountServiceClient {
 

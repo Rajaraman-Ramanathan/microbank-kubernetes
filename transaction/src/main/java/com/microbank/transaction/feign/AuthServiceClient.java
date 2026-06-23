@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @FeignClient(
         name = "auth-service",
-        url = "http://auth-service",
+        url = "http://auth-service.microbank-auth.svc.cluster.local",
         configuration = FeignConfig.class)
 public interface AuthServiceClient {
 
