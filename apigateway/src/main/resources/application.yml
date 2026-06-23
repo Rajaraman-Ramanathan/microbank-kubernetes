@@ -9,17 +9,17 @@ spring:
     gateway:
       routes:
         - id: transaction-service
-          uri: http://transaction-service
+          uri: http://transaction-service.microbank-transaction.svc.cluster.local
           predicates:
              - Path=/api/v1/transactions/**
 
         - id: auth-service
-          uri: http://auth-service
+          uri: http://auth-service.microbank-auth.svc.cluster.local
           predicates:
             - Path=/api/v1/auth/**
 
         - id: account-service
-          uri: http://account-service
+          uri: http://account-service.microbank-account.svc.cluster.local
           predicates:
             - Path=/api/v1/accounts/**
 
