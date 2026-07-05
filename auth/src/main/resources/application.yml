@@ -22,19 +22,25 @@ spring:
           issuer-uri: http://auth.dev.microbankapp.com/realms/microbank
           jwk-set-uri: http://auth.dev.microbankapp.com/realms/microbank/protocol/openid-connect/certs
 
+server:
+  port: ${SERVER_PORT:8081}          
+
 management:
   server:
-    port: 8081
+    port: ${MANAGEMENT_SERVER_PORT:8091}
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
       base-path: /actuator
   endpoint:
     health:
       probes:
         enabled: true
       show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 keycloak:
   refresh-token:

@@ -7,16 +7,22 @@ spring:
       mail.smtp.auth: false
       mail.smtp.starttls.enable: false
 
+server:
+  port: ${SERVER_PORT:8085}      
+
 management:
   server:
-    port: 8085
+    port: ${MANAGEMENT_SERVER_PORT:8095}
   endpoints:
     web:
       base-path: /actuator
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:
         enabled: true
       show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
